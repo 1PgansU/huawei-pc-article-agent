@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>华为PC营销软文智能体 · 自研编排 · ima取证</title>
+  <meta name="description" content="AI+华为PC营销软文智能体前端演示：连接知识库、任务输入、平台策略、图文成稿与合规核验、修订导出。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar" role="banner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">华</div>
+        <div class="brand-text">
+          <h1>华为PC营销软文智能体</h1>
+          <p class="tagline">自研编排 · ima取证</p>
+        </div>
+      </div>
+
+      <nav class="step-nav" aria-label="流程步骤">
+        <button type="button" class="step-nav-item active" data-page="connect"><span class="num">1</span><span class="label">连接</span></button>
+        <span class="step-nav-sep" aria-hidden="true"></span>
+        <button type="button" class="step-nav-item locked" data-page="task"><span class="num">2</span><span class="label">任务</span></button>
+        <span class="step-nav-sep" aria-hidden="true"></span>
+        <button type="button" class="step-nav-item locked" data-page="strategy"><span class="num">3</span><span class="label">策略</span></button>
+        <span class="step-nav-sep" aria-hidden="true"></span>
+        <button type="button" class="step-nav-item locked" data-page="draft"><span class="num">4</span><span class="label">成稿</span></button>
+        <span class="step-nav-sep" aria-hidden="true"></span>
+        <button type="button" class="step-nav-item locked" data-page="revise"><span class="num">5</span><span class="label">修订</span></button>
+      </nav>
+
+      <div class="topbar-meta">
+        <span id="account-mask" class="account-mask" title="连接模式" hidden></span>
+        <span id="kb-light" class="kb-light" title="知识库连接状态">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="kb-light-text">未连接</span>
+        </span>
+      </div>
+    </header>
+
+    <main class="main" role="main">
+      <!-- 页1 连接 -->
+      <section class="page active" data-page="connect" aria-labelledby="h-connect">
+        <div class="page-header">
+          <h2 id="h-connect">连接知识库</h2>
+          <p>先连 ima 云端共享库；连不上会自动改用本机「华为PC知识库」。无需在页面里粘贴完整密钥。</p>
+        </div>
+
+        <article class="card connect-hero">
+          <div id="connect-status" class="connect-status" data-state="idle">
+            <span class="connect-dot" aria-hidden="true"></span>
+            <div class="connect-status-text">
+              <strong id="connect-title">未连接</strong>
+              <p id="connect-detail">点击下方按钮，优先尝试云端，失败则用本地库。</p>
+            </div>
+          </div>
+
+          <div id="connect-result" class="connect-result" hidden>
+            <p id="connect-result-main" class="connect-result-main"></p>
+            <details id="connect-kb-details" class="connect-kb-details" hidden>
+              <summary>技术细节（kb_id）</summary>
+              <code id="connect-kb-id" class="mono"></code>
+            </details>
+          </div>
+
+          <div id="connect-hint" class="connect-hint" hidden></div>
+
+          <div class="btn-row connect-actions">
+            <button type="button" class="btn btn-primary" id="btn-connect">连接知识库</button>
+            <button type="button" class="btn btn-ghost" id="btn-local-only">仅用本地库</button>
+            <button type="button" class="btn btn-ghost" id="btn-reconnect" hidden>重新连接</button>
+          </div>
+
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary" id="btn-confirm-kb" disabled>下一步：填写任务</button>
+          </div>
+
+          <details class="connect-advanced">
+            <summary>高级：本次会话临时凭证（可选）</summary>
+            <p class="sub">仅存浏览器 sessionStorage，刷新可清；绝不写入仓库。本机已配置环境变量或 ~/.config/ima/ 时可忽略。</p>
+            <div class="form-grid" style="margin-top:10px">
+              <div class="field">
+                <label for="adv-client-id">Client ID</label>
+                <input id="adv-client-id" autocomplete="off" placeholder="可选，仅本次内存" />
+              </div>
+              <div class="field">
+                <label for="adv-api-key">API Key</label>
+                <input id="adv-api-key" type="password" autocomplete="off" placeholder="可选，仅本次内存" />
+              </div>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="btn btn-ghost" id="btn-save-creds">保存到本会话</button>
+              <button type="button" class="btn btn-ghost" id="btn-clear-creds">清除会话凭证</button>
+            </div>
+          </details>
+        </article>
+      </section>
+
+      <!-- 页2 任务 -->
+      <section class="page" data-page="task" aria-labelledby="h-task">
+        <div class="page-header">
+          <h2 id="h-task">任务页 · 任务输入</h2>
+          <p>产出完整 TaskSpec。产品 / 人群 / 场景 / 渠道 / 内容目标为必填；缺项会追问，不允许空任务直接出软文。</p>
+        </div>
+        <article class="card">
+          <div id="missing-bar" class="missing-bar" role="alert"></div>
+          <form id="task-form" class="form-grid" onsubmit="return false;">
+            <div class="field">
+              <label for="f-product">产品 product_hint <span class="req">*</span></label>
+              <input id="f-product" name="product_hint" autocomplete="off" placeholder="例如 MateBook X Pro 2024" />
+            </div>
+            <div class="field">
+              <label for="f-audience">人群 audience <span class="req">*</span></label>
+              <input id="f-audience" name="audience" autocomplete="off" placeholder="例如 大学新生" />
+            </div>
+            <div class="field">
+              <label for="f-scenario">场景 scenario <span class="req">*</span></label>
+              <input id="f-scenario" name="scenario" autocomplete="off" placeholder="例如 开学季" />
+            </div>
+            <div class="field">
+              <label for="f-platform">渠道 platform <span class="req">*</span></label>
+              <select id="f-platform" name="platform">
+                <option value="小红书">小红书</option>
+                <option value="公众号">公众号</option>
+                <option value="朋友圈">朋友圈</option>
+                <option value="海报">海报</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-stage">购买阶段 purchase_stage</label>
+              <input id="f-stage" name="purchase_stage" autocomplete="off" placeholder="例如 信息收集" />
+            </div>
+            <div class="field">
+              <label for="f-goal">内容目标 content_goal <span class="req">*</span></label>
+              <input id="f-goal" name="content_goal" autocomplete="off" placeholder="例如 种草+到店" />
+            </div>
+            <div class="field span-2">
+              <label for="f-question">用户问题 user_question</label>
+              <textarea id="f-question" name="user_question" placeholder="例如 兼顾学习、携带、续航"></textarea>
+            </div>
+          </form>
+          <div id="task-preview" class="preview-line"><span>一句话预览：</span>—</div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary" id="btn-gen-plan">生成内容策略</button>
+          </div>
+        </article>
+      </section>
+
+      <!-- 页3 策略 -->
+      <section class="page" data-page="strategy" aria-labelledby="h-strategy">
+        <div class="page-header">
+          <h2 id="h-strategy">策略页 · 场景与平台策略</h2>
+          <p>可解释的 ContentPlan。换平台后切角、结构、语气、配图数与 CTA 会明显不同。</p>
+        </div>
+        <article class="card">
+          <h3>识别摘要</h3>
+          <p class="sub">人群 / 场景 / 内容目标 / 平台</p>
+          <div id="strategy-tags" class="tags"></div>
+          <h3 style="margin-top:8px">ContentPlan</h3>
+          <p class="sub">切角、卖点排序、结构、语气、配图、行动引导</p>
+          <div id="plan-grid" class="plan-grid"></div>
+          <div id="plan-why" class="why-box"></div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-ghost" id="btn-back-task">返回改任务</button>
+            <button type="button" class="btn btn-primary" id="btn-gen-draft">按此策略生成图文</button>
+          </div>
+        </article>
+      </section>
+
+      <!-- 页4 成稿 -->
+      <section class="page" data-page="draft" aria-labelledby="h-draft">
+        <div class="page-header">
+          <h2 id="h-draft">成稿页 · 检索 + 图文 + 核验</h2>
+          <p>左取证 · 中稿纸 · 右合规签章。赛题四段 Tab：场景判断 / 知识库依据 / 图文软文 / 核验结果。</p>
+        </div>
+        <p id="draft-fail-hint" class="missing-bar" style="display:none;background:rgba(229,72,77,.12);border-color:rgba(229,72,77,.45);color:#f5a5a8">
+          <strong>已拦截：</strong>核验未通过，不能进入修订。请返回策略或修改任务后重试。
+        </p>
+        <div class="draft-layout">
+          <aside class="col-panel" aria-label="取证栏">
+            <h3>知识与图片检索</h3>
+            <div id="fact-list"></div>
+            <h3 style="margin-top:16px">图片（ima）</h3>
+            <div id="img-list"></div>
+          </aside>
+
+          <div class="manuscript-wrap">
+            <div class="output-tabs" role="tablist" aria-label="四段输出">
+              <button type="button" class="otab on" data-tab="article" role="tab" aria-selected="true">图文软文</button>
+              <button type="button" class="otab" data-tab="scene" role="tab">场景判断</button>
+              <button type="button" class="otab" data-tab="kb" role="tab">知识库依据</button>
+              <button type="button" class="otab" data-tab="verify" role="tab">核验结果</button>
+            </div>
+            <div class="otab-panel on" data-tab="article">
+              <article id="manuscript" class="manuscript"></article>
+            </div>
+            <div class="otab-panel" data-tab="scene">
+              <pre id="tab-scene" class="tab-plain"></pre>
+            </div>
+            <div class="otab-panel" data-tab="kb">
+              <pre id="tab-kb" class="tab-plain"></pre>
+            </div>
+            <div class="otab-panel" data-tab="verify">
+              <pre id="tab-verify" class="tab-plain"></pre>
+              <pre id="tab-article-plain" class="tab-plain" style="display:none"></pre>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="btn btn-ghost" id="btn-back-strategy">返回策略</button>
+              <button type="button" class="btn btn-primary" id="btn-to-revise">进入修改与导出</button>
+            </div>
+          </div>
+
+          <aside class="col-panel" aria-label="核验签章栏">
+            <h3>事实核验 · 合规签章</h3>
+            <div id="seal" class="seal warn" aria-live="polite">
+              <div>
+                <div class="seal-title">COMPLIANCE</div>
+                <div id="seal-status" class="seal-status">待确认</div>
+                <div id="seal-sub" class="seal-sub">WARN</div>
+              </div>
+            </div>
+            <div class="check-block">
+              <h4>事实核验 <span class="badge badge-info">EvidenceMap</span></h4>
+              <ul id="fact-check-list" class="check-list"></ul>
+            </div>
+            <div class="check-block">
+              <h4>图片核验</h4>
+              <ul id="img-check-list" class="check-list"></ul>
+            </div>
+            <div class="check-block">
+              <h4>合规检查</h4>
+              <ul id="comp-check-list" class="check-list"></ul>
+            </div>
+            <div class="check-block">
+              <h4>待确认字段</h4>
+              <ul id="unconfirmed-list" class="check-list"></ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 页5 修订 -->
+      <section class="page" data-page="revise" aria-labelledby="h-revise">
+        <div class="page-header">
+          <h2 id="h-revise">修订页 · 修改与导出</h2>
+          <p>临时删段、换渠道、换卖点或改 CTA 后，明确重跑「图文生成 → 事实/合规核验」（层 5→6）。</p>
+        </div>
+        <div class="revise-grid">
+          <article class="card">
+            <h3>修改指令</h3>
+            <p class="sub">勾选或填写后点「重跑生成与核验」</p>
+            <div class="rerun-note" role="note">
+              将重跑 <strong>层 5 → 层 6</strong>：图文编排与软文生成 → 核验与合规拦截。ima 事实仍只读，不编造价格。
+            </div>
+            <div class="option-group">
+              <label class="opt"><input type="checkbox" id="opt-delete" /> 删除最后一段正文（删段）</label>
+            </div>
+            <div class="field" style="margin-bottom:12px">
+              <label for="revise-platform">换渠道 platform</label>
+              <select id="revise-platform">
+                <option value="小红书">小红书</option>
+                <option value="公众号">公众号</option>
+                <option value="朋友圈">朋友圈</option>
+                <option value="海报">海报</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:12px">
+              <label for="opt-highlight">换卖点侧重</label>
+              <select id="opt-highlight">
+                <option value="">保持当前卖点顺序</option>
+                <option value="续航优先">续航优先</option>
+                <option value="屏幕优先">屏幕优先</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:12px">
+              <label for="revise-cta">改 CTA</label>
+              <input id="revise-cta" autocomplete="off" />
+            </div>
+            <p class="sub" style="margin-bottom:8px">当前标题：<span id="revise-current-title">—</span></p>
+            <div class="btn-row">
+              <button type="button" class="btn btn-primary" id="btn-rerun">重跑生成与核验</button>
+              <button type="button" class="btn btn-ghost" id="btn-revise-back-draft">查看成稿页</button>
+            </div>
+            <h3 style="margin-top:22px">导出</h3>
+            <p class="sub">复制全文 · Markdown · 纯文本（附核验摘要）</p>
+            <div class="btn-row">
+              <button type="button" class="btn" id="btn-export-copy">复制全文</button>
+              <button type="button" class="btn" id="btn-export-md">导出 Markdown</button>
+              <button type="button" class="btn" id="btn-export-txt">导出纯文本</button>
+            </div>
+            <div id="compare-box" class="compare-box" style="display:none">
+              <div class="side"><h5>改前</h5><pre id="compare-before" style="margin:0;white-space:pre-wrap;font-family:inherit"></pre></div>
+              <div class="side"><h5>改后</h5><pre id="compare-after" style="margin:0;white-space:pre-wrap;font-family:inherit"></pre></div>
+            </div>
+          </article>
+          <article class="card">
+            <h3>终稿预览</h3>
+            <p class="sub">稿纸缩略 · 完整版见成稿页</p>
+            <div id="revise-preview" class="manuscript"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 七层流水线 -->
+  <div id="pipeline-overlay" class="pipeline-overlay" role="dialog" aria-modal="true" aria-labelledby="pipeline-title">
+    <div class="pipeline-card">
+      <h3 id="pipeline-title">自研七层流水线</h3>
+      <p class="sub">理解 → 策略 → ima检索 → 事实 → 编排 → 核验 → 修改就绪</p>
+      <ul id="pipeline-list" class="pipeline-list"></ul>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

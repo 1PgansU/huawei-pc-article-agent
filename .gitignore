@@ -1,0 +1,45 @@
+# Secrets / credentials — never commit
+.env
+.env.local
+.env.*.local
+secrets/
+*.pem
+*.key
+*_secret*
+*_secrets*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# IDE / OS
+.idea/
+.vscode/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Large knowledge bases / dumps (kept out of this repo on purpose)
+华为PC知识库/
+华为PC知识库.zip
+事实检验与合规检查.zip
+**/华为PC知识库/
+
+# Optional: local archives can be large; small delivery zips are OK under archives/
+# archives/*.zip
+
+# Build / cache
+dist/
+build/
+.cache/
+*.egg-info/

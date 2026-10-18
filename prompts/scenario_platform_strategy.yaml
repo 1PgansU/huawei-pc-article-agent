@@ -1,0 +1,237 @@
+# 华为PC营销软文智能体 - 场景 x 平台策略表
+
+scenario_profiles:
+
+  school_season:
+    default_angle: 日常学习和便携，比单看跑分更重要
+    emotional_tone: 陪伴感、新开始、降低焦虑
+    priority_highlights:
+      - 重量与便携（影响每天通勤）
+      - 续航（课堂+图书馆全天）
+      - 屏幕护眼（长时间阅读/网课）
+      - 多设备协同（与手机、平板互传文件）
+      - 键盘舒适度（长时间打字/论文）
+    deprioritize:
+      - 极限跑分/游戏帧率
+      - 专业创作软件性能
+    avoid:
+      - 把所有学生需求归结为单一性能指标
+      - 炫耀参数/制造学习焦虑
+      - 虚构学长推荐或全班都在用
+    default_cta_templates:
+      xhs: 评论扣1，到店上手试一下
+      wechat_mp: 点击阅读原文，查看学生党配置清单
+      moments: 9月购机福利，进店咨询
+      poster: 凭学生证到店享专属服务
+
+  business_office:
+    default_angle: 在差旅、会议和多任务里验证，而不是看参数
+    emotional_tone: 专业、可靠、不打扰
+    priority_highlights:
+      - 多任务处理（Office/视频会议）
+      - 差旅便携（重量/充电器）
+      - 安全/隐私（指纹/人脸/数据加密）
+      - 屏幕素质（长时间文档/报表）
+      - 续航与快充（出差/会议连开）
+    deprioritize:
+      - 学生场景（游戏/手写/学习模式）
+      - 极限创作性能
+    avoid:
+      - 模糊的商务人士都选
+      - 暗示娱乐或游戏用途
+      - 杜撰企业客户案例
+    default_cta_templates:
+      xhs: 出差党可私聊帮你查配置
+      wechat_mp: 预约门店一对一商务配置咨询
+      moments: 到店出示工牌享商务权益
+      poster: 商务办公方案，进店详询
+
+  content_creation:
+    default_angle: 屏幕、性能和素材流转，看任务不看形容词
+    emotional_tone: 理性、可验证、专业
+    priority_highlights:
+      - 屏幕色准/分辨率/亮度（DeltaE、sRGB、P3、色深）
+      - 处理器与内存（剪辑/渲染/导出）
+      - 素材流转（与相机/手机/云盘）
+      - 接口与扩展（SD卡/外接显示器）
+      - 散热与噪音
+    deprioritize:
+      - 学生/办公基础场景
+    avoid:
+      - 虚构软件测试结果
+      - 用专业用户都在用等不可证明说法
+      - 推广未授权的第三方素材
+    default_cta_templates:
+      xhs: 带你的素材到店实测
+      wechat_mp: 预约创作者专场配置咨询
+      moments: 创作者专享体验，进店报名
+      poster: 带作品到店，免费校色
+
+  family_refresh:
+    default_angle: 一家人都能用，比单看参数更安心
+    emotional_tone: 温馨、实用、不焦虑
+    priority_highlights:
+      - 易用性（一键换机/家庭共享）
+      - 全家使用（老人模式/儿童模式）
+      - 数据迁移（旧机资料导入）
+      - 长期体验（耐用/售后便利）
+      - 影音娱乐（屏幕+扬声器）
+    deprioritize:
+      - 专业创作/游戏
+    avoid:
+      - 制造老人不会用焦虑
+      - 杜撰家庭场景对话
+    default_cta_templates:
+      xhs: 家庭套餐咨询，进店体验
+      wechat_mp: 免费数据迁移服务，预约到店
+      moments: 全家换新，到店享迁移服务
+      poster: 家庭换新一站服务
+
+  enterprise_procurement:
+    default_angle: 部署、管理和服务，看长期而不是单价
+    emotional_tone: 专业、可信、可对接
+    priority_highlights:
+      - 部署与管理（MDM/统一镜像）
+      - 稳定性与售后（保修/上门/备用机）
+      - 服务网络（全国/上门时效）
+      - TCO 与维保（3-5年）
+      - 安全合规（数据加密/指纹/可管理）
+    deprioritize:
+      - 个人娱乐/学生场景
+    avoid:
+      - 未在 ima 出现的政策/价格/补贴
+      - 杜撰企业客户案例/未授权标识
+      - 政府央企等不可证说法
+    default_cta_templates:
+      xhs: 企业采购咨询，私信对接
+      wechat_mp: 扫码对接企业服务团队
+      moments: 企业团购通道，进店详询
+      poster: 批量采购联系企业客户经理
+
+  store_visit:
+    default_angle: 一个明确卖点，加一个到店理由
+    emotional_tone: 简洁、邀请、不堆叠
+    priority_highlights:
+      - 1个明确卖点（与该用户人群强相关）
+      - 到店体验理由（为什么值得走一趟）
+      - 咨询引导（无强推销）
+    deprioritize:
+      - 多型号多参数对比
+      - 长篇参数介绍
+    avoid:
+      - 信息堆叠（一次讲5个卖点）
+      - 制造紧迫感
+    default_cta_templates:
+      poster: 进店体验，到店有礼
+      moments: 到店体验，享专属服务
+      xhs: 门店实拍，进店看真机
+
+  new_launch:
+    default_angle: 新品变化和适合人群，不堆跑分
+    emotional_tone: 新鲜、理性、不夸大
+    priority_highlights:
+      - 新品变化（vs 上代）
+      - 适合人群
+      - 购买建议（版本选择）
+    deprioritize:
+      - 历史款对比
+    avoid:
+      - 价格/权益无依据
+      - 暗示全面超越上代等不可证说法
+    default_cta_templates:
+      xhs: 新品到店，欢迎上手
+      wechat_mp: 新品发布会回放，点击查看
+      moments: 新品到店，欢迎到店体验
+      poster: 新品首发，进店尝鲜
+
+  holiday:
+    default_angle: 使用场景和选择建议，不靠优惠
+    emotional_tone: 温暖、走心、有仪式感
+    priority_highlights:
+      - 使用场景（送谁/送什么场景）
+      - 选择建议（哪一款适合送谁）
+      - 礼物包装/心意表达
+    deprioritize:
+      - 极限参数
+    avoid:
+      - 虚构优惠/补贴/库存
+      - 错过等一年等焦虑诱导
+    default_cta_templates:
+      xhs: 送礼方案，进店咨询
+      wechat_mp: 节日送礼指南，点击查看
+      moments: 节日礼盒装，详询门店
+      poster: 节日好礼，进店挑选
+
+platform_profiles:
+
+  wechat_mp:
+    structure: [标题, 导语, 3-5段正文, 结语, 行动引导]
+    length_min: 1500
+    length_max: 3000
+    image_min: 2
+    image_max: 4
+    tone: 严谨专业
+    cta_style: 阅读原文/留言/扫码咨询
+
+  xhs:
+    structure: [封面, 痛点, 事实A, 任务, 细节, 版本避坑, 结论]
+    length_min: 350
+    length_max: 550
+    image_min: 3
+    image_max: 6
+    tone: 朋友分享
+    cta_style: 评论扣1/评论区咨询/到店体验
+
+  moments:
+    structure: [核心卖点, 简短理由, 行动引导]
+    length_min: 80
+    length_max: 200
+    image_min: 1
+    image_max: 3
+    tone: 简洁直接
+    cta_style: 私聊咨询/到店体验/扫码
+
+  poster:
+    structure: [主标题, 副标题, "3个卖点", 活动说明]
+    length_min: 30
+    length_max: 80
+    image_min: 1
+    image_max: 1
+    tone: 醒目有力
+    cta_style: 到店/扫码/拨打电话
+
+  news:
+    structure: [倒金字塔, 客观陈述]
+    length_min: 600
+    length_max: 1500
+    image_min: 1
+    image_max: 3
+    tone: 客观可信
+    cta_style: 联系企业传讯
+
+  zhihu:
+    structure: [问题, 论证, 结论, 引用]
+    length_min: 800
+    length_max: 2500
+    image_min: 0
+    image_max: 3
+    tone: 严谨可信
+    cta_style: 评论区互动
+
+  short_video:
+    structure: [30-90秒, 3个核心信息点]
+    length_min: 100
+    length_max: 250
+    image_min: 0
+    image_max: 5
+    tone: 简洁有力
+    cta_style: 评论区互动
+
+  live:
+    structure: [分章节, 互动问答]
+    length_min: 1500
+    length_max: 5000
+    image_min: 0
+    image_max: 5
+    tone: 互动专业
+    cta_style: 直播间互动

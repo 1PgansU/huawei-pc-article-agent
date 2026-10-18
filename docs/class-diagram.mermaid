@@ -1,0 +1,159 @@
+classDiagram
+  class TaskInput {
+    +string product_hint
+    +string audience
+    +string scenario
+    +string platform
+    +string purchase_stage
+    +string user_question
+    +string content_goal
+  }
+  class TaskSpec {
+    +string product_hint
+    +string audience
+    +string scenario
+    +string platform
+    +string purchase_stage
+    +string user_question
+    +string content_goal
+    +list~string~ missing_info
+    +__init__(...)
+  }
+  class ContentPlan {
+    +string scenario_id
+    +string platform
+    +string angle
+    +list~string~ highlight_order
+    +list~string~ structure
+    +int length_min
+    +int length_max
+    +int image_min
+    +int image_max
+    +string tone
+    +string cta
+    +list~string~ avoid
+    +__init__(...)
+  }
+  class EvidenceMap {
+    +list~Fact~ facts
+    +list~Image~ images
+    +string retrieval_mode
+    +__init__(...)
+  }
+  class Fact {
+    +string key
+    +string value
+    +string source
+    +string model_id
+    +string evidence_level
+  }
+  class Image {
+    +string id
+    +string desc
+    +string source
+    +string matched_model
+    +string preview_url
+  }
+  class DraftArticle {
+    +string title
+    +string lead
+    +string body
+    +string cta
+    +list~Section~ sections
+    +string disclaimer
+    +list~ImageLayout~ image_layout
+    +__init__(...)
+  }
+  class VerificationReport {
+    +dict fact_check
+    +dict image_check
+    +dict compliance_check
+    +list~string~ unconfirmed
+    +bool overall_pass
+    +__init__(...)
+  }
+  class PlanSnapshot {
+    +string task_id
+    +int version
+    +TaskSpec task
+    +ContentPlan plan
+    +datetime created_at
+  }
+  class ResultBundle {
+    +string result_id
+    +string task_id
+    +int version
+    +string previous_result_id
+    +TaskSpec task
+    +ContentPlan plan
+    +EvidenceMap evidence
+    +DraftArticle article
+    +VerificationReport report
+    +dict segments
+    +string retrieval_mode
+    +string generation_mode
+    +list~string~ warnings
+  }
+  class ResultStore {
+    +dict plans
+    +dict results
+    +dict assets
+    +Lock lock
+    +__init__()
+    +put_plan(task,plan) PlanSnapshot
+    +get_plan(id,version) PlanSnapshot
+    +put_result(bundle,expected_version) ResultBundle
+    +get_result(id) ResultBundle
+    +get_asset(id) bytes
+  }
+  class IntegrationService {
+    +ResultStore store
+    +__init__(store)
+    +status(probe) dict
+    +options() dict
+    +plan(input) PlanSnapshot
+    +generate(task_id,version) ResultBundle
+    +revise(result_id,version,changes) ResultBundle
+    +export(result_id,version,format) bytes
+    +asset(asset_id) bytes
+  }
+  class HttpHandler {
+    +IntegrationService service
+    +do_GET()
+    +do_POST()
+    +send_json(status,payload)
+  }
+  class ApiClient {
+    +request(path,options) Promise
+    +status() Promise
+    +plan(input) Promise
+    +generate(id,version) Promise
+    +revise(id,version,changes) Promise
+    +export(id,version,format) Promise
+  }
+  class AppState {
+    +string page
+    +PlanSnapshot currentPlan
+    +ResultBundle currentResult
+    +int requestSeq
+    +AbortController controller
+    +bool busy
+    +invalidateDownstream()
+    +commitIfCurrent(bundle,seq)
+  }
+  TaskInput --> TaskSpec : 服务端归一化
+  PlanSnapshot *-- TaskSpec
+  PlanSnapshot *-- ContentPlan
+  ResultBundle *-- TaskSpec
+  ResultBundle *-- ContentPlan
+  ResultBundle *-- EvidenceMap
+  ResultBundle *-- DraftArticle
+  ResultBundle *-- VerificationReport
+  EvidenceMap *-- Fact
+  EvidenceMap *-- Image
+  ResultStore o-- PlanSnapshot
+  ResultStore o-- ResultBundle
+  IntegrationService --> ResultStore
+  HttpHandler --> IntegrationService
+  ApiClient --> HttpHandler : HTTP
+  AppState --> ApiClient

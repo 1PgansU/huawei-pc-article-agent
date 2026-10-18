@@ -1,0 +1,74 @@
+sequenceDiagram
+  autonumber
+  participant UI as AppState/五页
+  participant API as ApiClient
+  participant HTTP as HttpHandler
+  participant S as IntegrationService
+  participant DB as ResultStore
+  participant KB as kb_connection/ima_retrieval
+  participant Layers as task/strategy/generation/verification/revision
+  UI->>API: status() / 首次加载
+  API->>HTTP: GET /api/status
+  HTTP->>S: status(false)
+  S->>KB: 精确搜索锁定知识库与已执行的探针
+  KB-->>S: 状态/真实结果/可见降级原因
+  S-->>HTTP: 掩码/库/LLM配置及探测状态
+  HTTP-->>UI: data + request_id
+  UI->>API: status() / 重新探测
+  API->>HTTP: POST /api/connection/probe {}
+  HTTP->>S: status(true)
+  S->>KB: 重测 ima、按选择执行 LLM 最小探测
+  KB-->>S: ok/failed/skipped 与时间
+  S-->>HTTP: 探测状态
+  HTTP-->>API: JSON 探测结果
+  API-->>UI: 显示状态
+  UI->>API: options()
+  API->>HTTP: GET /api/options
+  HTTP->>S: options()
+  S-->>UI: 规范型号/8场景/4渠道
+  UI->>API: plan(TaskInput)
+  API->>HTTP: POST /api/plan
+  HTTP->>S: plan(TaskInput)
+  S->>Layers: 显式字段校验/中英映射/严格型号
+  alt 缺项或歧义
+    S-->>UI: 422 field_errors/candidates
+  else 有效
+    S->>Layers: build_content_plan(TaskSpec)
+    S->>DB: put_plan(task,plan)
+    DB-->>UI: task_id,version,task,plan
+  end
+  UI->>API: generate(task_id,version)
+  API->>HTTP: POST /api/generate
+  HTTP->>S: generate(task_id,version)
+  S->>DB: get_plan(task_id,version)
+  S->>KB: retrieve_evidence(锁定kb_id,规范型号,scenario)
+  alt get_media_info 返回 220021
+    KB->>KB: 严格模式阻断或已匹配的镜像/缓存降级
+  end
+  KB-->>S: EvidenceMap + retrieval_mode + warnings
+  S->>Layers: generate_draft(task,plan,evidence)
+  S->>Layers: verify(draft,evidence,plan)
+  S->>DB: put_result(同版六对象与四段)
+  DB-->>UI: ResultBundle（包括 FAIL 诊断）
+  UI->>API: revise(result_id,version,changes)
+  API->>HTTP: POST /api/revise
+  HTTP->>S: revise(...)
+  S->>DB: get_result + expected_version 检查
+  S->>Layers: 克隆对象/如换渠道重建 plan/生成/删段/CTA/核验
+  S->>DB: 原子保存新 ResultBundle
+  DB-->>UI: 新版本 + previous_result_id + changed[]
+  UI->>API: export(current result_id,version,md|txt)
+  API->>HTTP: GET /api/results/{id}/export
+  HTTP->>S: export(id,version,format)
+  S->>DB: get_result + 当前版本与 PASS/WARN 门禁
+  alt FAIL/未核验/过期
+    S-->>UI: 409 错误
+  else 可交付
+    S->>Layers: build_export_markdown 或 build_export_text
+    S-->>UI: 当前同版下载/复制文本
+  end
+  UI->>API: GET /api/assets/{opaque_id}
+  API->>HTTP: GET /api/assets/{opaque_id}
+  HTTP->>S: asset(opaque_id)
+  S->>DB: get_asset(登记资源)
+  DB-->>UI: 图片字节或 404
