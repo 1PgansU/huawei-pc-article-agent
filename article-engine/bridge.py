@@ -1,10 +1,12 @@
 """
-桥接层：供 agent/layers 以稳定 dict 接口调用本引擎。
+桥接层：给 agent/layers 以稳定 dict 接口调用本引擎。
 失败时抛异常，由调用方回退原逻辑。
 """
 from __future__ import annotations
 
+import re
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -12,7 +14,7 @@ _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from paths import resolve_kb_root  # noqa: E402
+from paths import get_project_root, resolve_kb_root  # noqa: E402
 
 
 def _ensure_imports():
@@ -23,6 +25,65 @@ def _ensure_imports():
     from article_system import ArticleSystem  # noqa: F401
 
 
+def _is_xhs_platform(platform: str) -> bool:
+    p = (platform or "").strip().lower()
+    return ("小红书" in (platform or "")) or p in ("xhs", "xiaohongshu")
+
+
+def _default_xhs_out_dir() -> Path:
+    """Prefer project exports/xhs, else article-engine/out."""
+    exports = get_project_root() / "exports" / "xhs"
+    try:
+        exports.mkdir(parents=True, exist_ok=True)
+        return exports
+    except OSError:
+        out = _HERE / "out"
+        out.mkdir(parents=True, exist_ok=True)
+        return out
+
+
+def _safe_stem(*parts: str) -> str:
+    raw = "_".join(str(p) for p in parts if p)
+    raw = re.sub(r"[^\w\u4e00-\u9fff\-]+", "_", raw, flags=re.UNICODE)
+    return raw.strip("_")[:80] or "xhs"
+
+
+def generate_xhs_html(
+    product_name: str,
+    style: str = "颜值种草",
+    target_audience: str = "学生党",
+    kb_root: Optional[str] = None,
+    output_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """小红书自动图文：知识库事实 + 找图 + HTML。失败抛异常。"""
+    from xhs_auto_generator import XHSAutoGenerator
+
+    kb = str(resolve_kb_root(kb_root))
+    if not output_path:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        name = _safe_stem(product_name, style, stamp) + ".html"
+        output_path = str(_default_xhs_out_dir() / name)
+    else:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
+    gen = XHSAutoGenerator(kb)
+    html_path = gen.generate(
+        product_name=product_name,
+        style=style,
+        target_audience=target_audience,
+        output_path=output_path,
+    )
+    return {
+        "engine": "article-engine",
+        "kind": "xhs_auto_html",
+        "kb_root": kb,
+        "html_path": html_path,
+        "product_name": product_name,
+        "style": style,
+        "target_audience": target_audience,
+    }
+
+
 def generate_article(
     product_name: str,
     scenario: str = "移动办公",
@@ -30,8 +91,12 @@ def generate_article(
     target_audience: str = "职场人",
     kb_root: Optional[str] = None,
     auto_fix: bool = True,
+    xhs_style: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """生成+可选校验，返回前端/layers 友好的 dict。"""
+    """生成+可选校验，返回前端/layers 友好的 dict。
+
+    当 platform 含「小红书」时，额外尝试 generate_xhs_html；失败只写入 xhs_error，不影响主链。
+    """
     _ensure_imports()
     from article_system import ArticleSystem
 
@@ -51,6 +116,7 @@ def generate_article(
         "status": raw.get("status"),
         "kb_root": kb,
         "iterations": raw.get("iterations", []),
+        "extra": {},
     }
     if article is not None:
         out["article"] = article.to_dict() if hasattr(article, "to_dict") else article
@@ -76,7 +142,34 @@ def generate_article(
         out["validation"] = report.to_dict() if hasattr(report, "to_dict") else report
         out["can_publish"] = getattr(report, "can_publish", False)
         out["score"] = getattr(report, "final_score", None)
+
+    if _is_xhs_platform(platform):
+        style = xhs_style or _guess_xhs_style(scenario, target_audience)
+        try:
+            xhs = generate_xhs_html(
+                product_name=product_name,
+                style=style,
+                target_audience=target_audience or "学生党",
+                kb_root=kb,
+            )
+            out["xhs_html_path"] = xhs.get("html_path")
+            out["extra"]["xhs"] = xhs
+        except Exception as exc:  # noqa: BLE001 — 旁路失败不影响主链
+            out["xhs_error"] = str(exc)
+            out["extra"]["xhs_error"] = str(exc)
+
     return out
+
+
+def _guess_xhs_style(scenario: str, audience: str) -> str:
+    text = f"{scenario} {audience}"
+    if any(k in text for k in ("学生", "开学", "校园")):
+        return "学生党"
+    if any(k in text for k in ("性能", "创作", "Pro", "旗舰")):
+        return "性能实测"
+    if any(k in text for k in ("职场", "办公", "商务", "企业")):
+        return "职场办公"
+    return "颜值种草"
 
 
 def verify_content(

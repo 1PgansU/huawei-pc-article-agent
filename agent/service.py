@@ -74,13 +74,32 @@ class IntegrationService:
             "kb_id": kb.kb_id,
             "connection": connection,
             "checked_at": datetime.now(timezone.utc).isoformat(),
-            "llm": {"configured": bool(os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")), "probe_status": "skipped", "model": os.getenv("LLM_MODEL", ""), "generation_mode": "template"},
+            "llm": {
+                "configured": bool((os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()),
+                "probe_status": "configured" if (os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip() else "missing_key",
+                "model": os.getenv("LLM_MODEL", "") or "doubao-pro-32k",
+                "generation_mode": (
+                    "llm+platform_template"
+                    if (os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()
+                    and os.getenv("USE_LLM_GENERATION", "1") not in ("0", "false", "False")
+                    else "article-engine/local (no LLM_API_KEY — platform md templates NOT injected)"
+                ),
+                "use_llm_generation": os.getenv("USE_LLM_GENERATION", "1"),
+            },
             "allowed_mode": "strict" if strict else "local_demo",
             "fallback_reason": "" if connection == "connected" else "ima 未连通；使用本地镜像演示" if connection == "local_index" else "知识库不可用，请检查服务端配置",
             "probes": [
                 {"name": "search_knowledge_base", "status": "ok" if kb.connection == "connected" else "failed", "detail": "共享库定位成功" if kb.connection == "connected" else "线上库未连通"},
                 {"name": "local_index", "status": "ok" if kb.connection == "local_index" else "skipped", "detail": "本地镜像演示" if kb.connection == "local_index" else "未使用本地索引"},
-                {"name": "LLM", "status": "skipped", "detail": "未执行模型探测；生成采用受控模板"},
+                {
+                    "name": "LLM",
+                    "status": "ok" if (os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip() else "missing_key",
+                    "detail": (
+                        "已配置 LLM_API_KEY；小红书/朋友圈/公众号将合并 article-engine/prompts/templates 平台模板"
+                        if (os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()
+                        else "未配置 LLM_API_KEY；生成回退 article-engine/本地模板，不会把平台 md 提示词注入 LLM"
+                    ),
+                },
             ],
         }
         with self._lock:
@@ -196,7 +215,19 @@ class IntegrationService:
             "result_id": result_id, "task_id": task_id, "version": previous["version"] + 1 if previous else 1,
             "previous_result_id": previous["result_id"] if previous else None,
             "task": asdict(task), "plan": {**asdict(plan), "audience": task.audience, "content_goal": task.content_goal, "product_hint": task.product_hint, "platform_label": next((label for label, pid in PLATFORMS.items() if pid == task.platform), task.platform), "scenario_label": next((label for label, sid in SCENARIOS.items() if sid == task.scenario), task.scenario), "why": f"根据{task.scenario}与{task.platform}策略生成，卖点与篇幅来自服务端配置。"}, "evidence": ev, "article": article, "report": report,
-            "retrieval_mode": evidence.retrieval_mode, "generation_mode": "template", "changed": changed or [],
+            "retrieval_mode": evidence.retrieval_mode,
+            "generation_mode": (draft.extra or {}).get("generation") or "template",
+            "generation_meta": {
+                "used_platform_template": bool((draft.extra or {}).get("used_platform_template")),
+                "platform_template": (draft.extra or {}).get("platform_template") or "",
+                "platform_template_name": (draft.extra or {}).get("platform_template_name") or "",
+                "platform_template_chars": (draft.extra or {}).get("platform_template_chars") or 0,
+                "llm_skip_reason": (draft.extra or {}).get("llm_skip_reason") or "",
+                "generation": (draft.extra or {}).get("generation") or "template",
+                "system_prompt_chars": (draft.extra or {}).get("system_prompt_chars") or 0,
+                "template_injection_note": (draft.extra or {}).get("template_injection_note") or "",
+            },
+            "changed": changed or [],
             "warnings": [item["reason"] for item in unconfirmed],
         }
         result["segments"] = {

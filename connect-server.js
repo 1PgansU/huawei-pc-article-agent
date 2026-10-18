@@ -6,6 +6,11 @@
  *
  * Plan A: 调用 ima-skill/ima_api.cjs 搜共享库并估条目
  * Plan B: 扫描本地「华为PC知识库」目录
+ *
+ * 凭证：启动时从项目根 .env 载入；只读 process.env
+ *   IMA_CLIENT_ID / IMA_API_KEY 或 IMA_OPENAPI_CLIENTID / IMA_OPENAPI_APIKEY
+ *   可选回退 ~/.config/ima/{client_id,api_key}（非必需）
+ * 配图：POST /api/evidence → ima get_media_info 缓存 或 本地图片索引
  */
 "use strict";
 
@@ -16,13 +21,17 @@ const os = require("os");
 const { spawn } = require("child_process");
 const { URL } = require("url");
 
+const { createEvidenceHandlers } = require("./server/evidence");
+
 const ROOT = __dirname;
 
 /** Load KEY=VALUE from .env into process.env if not already set (no logging of values). */
 function loadDotEnv(filePath) {
   try {
     if (!fs.existsSync(filePath)) return false;
-    const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+    let raw = fs.readFileSync(filePath, "utf8");
+    if (raw.charCodeAt(0) === 0xfeff) raw = raw.slice(1);
+    const lines = raw.split(/\r?\n/);
     for (const line of lines) {
       const t = line.trim();
       if (!t || t.startsWith("#")) continue;
@@ -51,6 +60,7 @@ loadDotEnv(path.join(ROOT, "frontend", ".env"));
 const FRONTEND = path.join(ROOT, "frontend");
 const IMA_API = path.join(ROOT, "ima-skill", "ima_api.cjs");
 const PORT = Number(process.env.HW_CONNECT_PORT || 8787);
+const CACHE_DIR = path.join(ROOT, ".ima-cache");
 
 const WIN_DEFAULT_KB = path.join(
   process.env.USERPROFILE || "C:\\Users\\phobi",
@@ -503,6 +513,15 @@ function serveStatic(req, res, urlPath) {
   });
 }
 
+
+const evidenceApi = createEvidenceHandlers({
+  runImaApi,
+  apiOk,
+  unwrapData,
+  cacheDir: CACHE_DIR,
+  hasCredentials,
+});
+
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
   const p = u.pathname;
@@ -524,6 +543,8 @@ const server = http.createServer(async (req, res) => {
         service: "huawei-connect",
         port: PORT,
         has_credentials: hasCredentials(),
+        evidence: true,
+        cache_dir: CACHE_DIR,
         ima_api: fs.existsSync(IMA_API),
         default_local_kb: resolveLocalKbPath(),
         time: new Date().toISOString(),
@@ -535,6 +556,28 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const result = await connect(body || {});
       sendJson(res, 200, result);
+      return;
+    }
+
+    if ((p === "/api/evidence" || p === "/api/images") && req.method === "POST") {
+      const body = await readBody(req);
+      const result = await evidenceApi.fetchEvidence(body || {}, resolveLocalKbPath);
+      sendJson(res, 200, result);
+      return;
+    }
+
+    if (p === "/api/local-file" && req.method === "GET") {
+      evidenceApi.serveLocalFile(req, res, u, resolveLocalKbPath);
+      return;
+    }
+
+    if (p.startsWith("/api/cache/") && req.method === "GET") {
+      evidenceApi.serveCache(req, res, p.slice("/api/cache/".length));
+      return;
+    }
+
+    if (p === "/api/media-proxy" && req.method === "GET") {
+      await evidenceApi.serveMediaProxy(req, res, u, () => ({}));
       return;
     }
 
@@ -561,4 +604,5 @@ server.listen(PORT, "127.0.0.1", () => {
   console.log(`[huawei-connect] ima_api: ${fs.existsSync(IMA_API) ? IMA_API : "MISSING"}`);
   console.log(`[huawei-connect] credentials: ${hasCredentials() ? "yes" : "no"}`);
   console.log(`[huawei-connect] local_kb: ${resolveLocalKbPath()}`);
+  console.log(`[huawei-connect] evidence: /api/evidence (ima→local)`);
 });

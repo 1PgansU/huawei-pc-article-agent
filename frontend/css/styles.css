@@ -654,6 +654,24 @@ a:focus-visible,
   border: 1px solid #ddd5cc;
   background: #e8e2d8;
 }
+.img-thumb.has-img {
+  padding: 0;
+  overflow: hidden;
+  background: #111;
+}
+.img-thumb.has-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.img-real {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: #1a1f27;
+}
 .img-placeholder {
   height: 140px;
   display: grid;

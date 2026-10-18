@@ -181,6 +181,28 @@
     };
   }
 
+  function mergeRealImages(task, realImages) {
+    const facts = BASE_EVIDENCE.facts.map((f) => Object.assign({}, f));
+    const want = (PLATFORM_PLANS[task.platform] && PLATFORM_PLANS[task.platform].image_count) || 4;
+    let images = [];
+    if (Array.isArray(realImages) && realImages.length) {
+      images = realImages.slice(0, want).map((img) => ({
+        id: img.id || img.media_id || "img",
+        desc: img.caption || img.desc || img.id || "配图",
+        source: img.source || "",
+        matched_model: img.matched_model || task.product_hint,
+        url: img.url || "",
+        mode: img.mode || "",
+      }));
+    }
+    if (!images.length) {
+      images = BASE_EVIDENCE.images.slice(0, want).map((img) =>
+        Object.assign({}, img, { matched_model: task.product_hint, url: "" })
+      );
+    }
+    return { facts, images };
+  }
+
   function buildEvidence(task) {
     const facts = BASE_EVIDENCE.facts.map((f) => Object.assign({}, f));
     const images = BASE_EVIDENCE.images
@@ -257,8 +279,9 @@
     const image_layout = evidence.images.map((img, i) => ({
       pos: i === 0 ? "开头" : `段${i}`,
       image_id: img.id,
-      caption: img.desc,
+      caption: img.desc || img.caption || "",
       source: img.source,
+      url: img.url || "",
     }));
 
     const body = sections.join("\n\n") + priceNote;
@@ -452,6 +475,7 @@
     validateTask,
     buildContentPlan,
     buildEvidence,
+    mergeRealImages,
     buildArticle,
     buildVerification,
     buildFourSegments,

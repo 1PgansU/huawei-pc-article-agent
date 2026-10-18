@@ -492,7 +492,36 @@
     setTimeout(tick, 200);
   }
 
-  function generateDraftBundle(reviseOpts) {
+  async function fetchEvidenceImages(task) {
+    const info = state.connectInfo || {};
+    const prefer =
+      state.connectMode === "local" ? "local" : state.connectMode === "ima" ? "auto" : "auto";
+    const payload = {
+      prefer,
+      knowledge_base_id: info.kb_id || M.DEMO_KB.kb_id || undefined,
+      query: task.product_hint || "",
+      model: task.product_hint || "",
+      limit: (state.plan && state.plan.image_count) || 4,
+      local_path: info.local_path || M.DEMO_KB.local_path || undefined,
+    };
+    try {
+      const res = await fetch(API_BASE + "/api/evidence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (data && Array.isArray(data.images) && data.images.length) {
+        return data.images;
+      }
+    } catch (err) {
+      console.warn("evidence fetch failed", err);
+    }
+    return [];
+  }
+
+  async function generateDraftBundle(reviseOpts) {
     let task = Object.assign({}, state.task);
     if (reviseOpts && reviseOpts.newPlatform) {
       task.platform = reviseOpts.newPlatform;
@@ -501,7 +530,11 @@
     }
     const plan = state.plan || M.buildContentPlan(task);
     state.plan = plan;
-    const evidence = M.buildEvidence(task);
+    const realImgs = await fetchEvidenceImages(task);
+    const evidence =
+      typeof M.mergeRealImages === "function"
+        ? M.mergeRealImages(task, realImgs)
+        : M.buildEvidence(task);
     state.evidence = evidence;
     const article = M.buildArticle(task, plan, evidence, reviseOpts || null);
     state.article = article;
@@ -518,9 +551,11 @@
 
   function onStartGenerate() {
     showPipeline(() => {
-      generateDraftBundle(null);
-      go("draft");
-      toast("图文已生成，核验完成");
+      generateDraftBundle(null).then(() => {
+        go("draft");
+        const n = (state.evidence && state.evidence.images || []).filter((i) => i.url).length;
+        toast(n ? `图文已生成（${n} 张真图）` : "图文已生成，核验完成");
+      });
     });
   }
 
@@ -545,15 +580,20 @@
       })
       .join("");
     $("#img-list").innerHTML = ev.images
-      .map(
-        (img) =>
-          `<div class="img-item"><div class="img-thumb">${img.id}</div><div class="desc">${img.desc}</div><div class="model">匹配型号 · ${img.matched_model}</div><div class="src">${img.source}</div></div>`
-      )
+      .map((img) => {
+        const thumb = img.url
+          ? `<div class="img-thumb has-img"><img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.desc || "")}" loading="lazy" /></div>`
+          : `<div class="img-thumb">${escapeHtml(img.id)}</div>`;
+        return `<div class="img-item">${thumb}<div class="desc">${escapeHtml(img.desc || "")}</div><div class="model">匹配型号 · ${escapeHtml(img.matched_model || "")}</div><div class="src">${escapeHtml(img.source || "")}</div></div>`;
+      })
       .join("");
   }
 
   function figureHtml(il) {
-    return `<figure class="img-slot"><div class="img-placeholder">ima 配图占位<br>${escapeHtml(il.image_id)}<br>${escapeHtml(il.caption)}</div><figcaption class="img-cap">${escapeHtml(il.caption)} · <code>${escapeHtml(il.source)}</code></figcaption></figure>`;
+    const inner = il.url
+      ? `<img class="img-real" src="${escapeHtml(il.url)}" alt="${escapeHtml(il.caption || "")}" loading="lazy" />`
+      : `<div class="img-placeholder">配图暂缺<br>${escapeHtml(il.image_id || "")}<br>${escapeHtml(il.caption || "")}</div>`;
+    return `<figure class="img-slot">${inner}<figcaption class="img-cap">${escapeHtml(il.caption || "")} · <code>${escapeHtml(il.source || "")}</code></figcaption></figure>`;
   }
 
   function renderManuscript() {
@@ -675,9 +715,10 @@
     }
     state.prevArticle = state.article;
     showPipeline(() => {
-      generateDraftBundle(opts);
-      renderRevise();
-      toast("已重跑层 5→6：生成 + 核验");
+      generateDraftBundle(opts).then(() => {
+        renderRevise();
+        toast("已重跑层 5→6：生成 + 核验");
+      });
     });
   }
 

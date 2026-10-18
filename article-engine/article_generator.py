@@ -232,10 +232,17 @@ class ArticleGenerator:
             reason=reason3
         ))
 
-        # 根据平台调整
+        # 根据平台调整（硬分叉，禁止两平台仅差分隔符）
         if platform == "小红书":
-            # 小红书标题更口语化、更具情绪
-            titles[0].title = titles[0].title.replace("：", "｜").replace("？", "❓")
+            titles[0].title = f"姐妹们看过来😭｜{product_name}真实上手，这几点别踩坑"
+            titles[0].reason = "小红书情绪种草标题，区别于朋友圈销售短帖"
+            titles[1].title = f"用了一周才敢说｜{product_name}适不适合{target_audience}"
+            titles[2].title = f"{product_name}避雷笔记｜买前先看这3点"
+        elif platform == "朋友圈":
+            titles[0].title = f"🔥 {product_name}｜现货可体验"
+            titles[0].reason = "朋友圈销售短帖标题，禁止种草长句"
+            titles[1].title = f"✅ {product_name}到店可看实机"
+            titles[2].title = f"{product_name}｜配置以官网为准，欢迎咨询"
 
         return titles
 
@@ -281,6 +288,18 @@ class ArticleGenerator:
                 "本文列出几个判断要点，帮助你做出选择。"
             )
 
+        # 【平台分叉】朋友圈压成短帖导语；小红书保持种草口吻
+        if platform == "朋友圈":
+            opening = (
+                f"🔥 {product_name}｜现货可体验\n"
+                f"适合{target_audience}·{scenario}\n"
+                "✅ 配置以官网/门店实机为准"
+            )
+        elif platform == "小红书":
+            opening = (
+                f"用了几天{product_name}，按「{target_audience}/{scenario}」真实记录～"
+                "只写能核对的点，不写没依据的承诺。"
+            )
         return opening
 
     def generate_body(self,
@@ -301,6 +320,12 @@ class ArticleGenerator:
         facts = self.retriever.get_product_facts(product_name)
         if not facts:
             return "", []
+
+        # 【平台硬分叉】小红书种草体 / 朋友圈短帖，禁止共用软文骨架
+        if platform == "朋友圈":
+            return self._body_moments(product_name, facts)
+        if platform == "小红书":
+            return self._body_xhs(product_name, facts)
 
         facts_used = []
         paragraphs = []
@@ -394,6 +419,64 @@ class ArticleGenerator:
 
         body = "".join(paragraphs)
         return body, facts_used
+
+
+    def _body_xhs(self, product_name: str, facts: dict):
+        """小红书种草小节，非软文报告。"""
+        used = []
+        parts = [
+            f"先说体感：{product_name}更适合日常种草笔记，不是到店推销短帖。",
+        ]
+        mapping = [
+            ("✨ 屏幕｜观感", "screen_size", "screen_type", "resolution"),
+            ("🎒 便携｜出门", "weight",),
+            ("📱 系统｜协同", "os",),
+            ("⚙️ 配置｜性能底子", "processor", "memory", "storage"),
+        ]
+        for item in mapping:
+            title, keys = item[0], item[1:]
+            vals = []
+            for k in keys:
+                v = facts.get(k)
+                if v:
+                    vals.append(str(v))
+                    used.append(f"{k}: {v}")
+            if vals:
+                parts.append(f"{title}\n" + "，".join(vals) + "。真实上手比参数表直观，版本差异记得回官网核对。")
+        parts.append(
+            "避雷｜不同销售版本配置可能不同，请以官方规格页及实机为准；不写价格库存补贴。"
+        )
+        parts.append(
+            "💬 同场景你们用什么本？评论区聊聊～\n📌 建议收藏对照官方页\n"
+            f"#真实上手 #{product_name.replace(' ', '')} #避雷指南"
+        )
+        return "\n\n".join(parts), used
+
+    def _body_moments(self, product_name: str, facts: dict):
+        """朋友圈销售短帖：短行+✓参数。"""
+        used = []
+        lines = [f"🔥 {product_name}｜现货可体验", ""]
+        for label, key in [
+            ("屏幕", "screen_size"),
+            ("重量", "weight"),
+            ("系统", "os"),
+            ("处理器", "processor"),
+        ]:
+            v = facts.get(key)
+            if v:
+                lines.append(f"✅ {label}：{v}")
+                used.append(f"{key}: {v}")
+        lines.extend([
+            "",
+            "✓ 配置以官网/门店实机为准",
+            "✓ 到店可上手体验",
+            "✓ 详询可私信预约",
+            "",
+            "欢迎到店咨询～",
+            "不同销售版本配置可能不同，请以官方规格页及实际销售 SKU 为准。",
+        ])
+        return "\n".join(lines), used
+
 
     def generate_cta(self, platform: str, scenario: str) -> str:
         """
